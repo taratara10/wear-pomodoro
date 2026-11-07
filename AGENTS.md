@@ -10,7 +10,11 @@ Pixel Watch 向けのポモドーロアプリ（Wear OS、Kotlin、Wear Compose 
   - `TimerController.kt`: UI と Receiver が呼ぶ唯一の入口
   - `AlarmScheduler.kt` / `Haptics.kt` / `TimerStore.kt` / `EventLog.kt`
   - `TimerNotifier.kt`: 常駐通知と Ongoing Activity（文字盤の表示）
-- `PomodoroApp.kt`: 1 画面の Compose UI
+- `app/src/main/kotlin/io/github/kabos/pomodoro/history/` — ポモの記録（Room）
+  - `HistorySummary.kt`: Android 非依存の日・週の集計。単体テストで守る
+  - `PomodoroHistory.kt`: 読み書きの入口。Receiver から書くときは `afterPendingWrites` で goAsync を閉じる
+  - DB を変えたら `version` を上げてマイグレーションを書く。スキーマは `app/schemas/` に出る
+- `PomodoroApp.kt`: 画面遷移とタイマー画面。`HistoryScreens.kt`: 記録と日ごとの詳細
 - `PomodoroTileService.kt`: 今日の状況を見るタイル。状態が変わると `TimerController` が更新を頼む
 - `AlarmReceiver.kt` / `SystemEventReceiver.kt`: アラーム受信、再起動・更新後の復元
 - `app/src/debug/`: 試験用に作業/瞑想の秒数を adb から変える Receiver

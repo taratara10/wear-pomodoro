@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import io.github.kabos.pomodoro.history.PomodoroHistory
 import io.github.kabos.pomodoro.timer.TimerController
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +22,7 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     controller = TimerController(this)
     setContent {
-      PomodoroApp(controller = controller)
+      PomodoroApp(controller = controller, history = PomodoroHistory.get(this))
     }
     // 通知欄・文字盤から戻れるようにするため。初回の 1 回だけ聞かれる
     if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

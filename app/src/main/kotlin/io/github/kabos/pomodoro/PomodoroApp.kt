@@ -15,7 +15,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.CompactButton
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import io.github.kabos.pomodoro.history.PomodoroHistory
+import java.time.LocalDate
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.EdgeButtonSize
 import androidx.wear.compose.material3.MaterialTheme
@@ -29,16 +38,43 @@ import io.github.kabos.pomodoro.timer.TimerState
 import io.github.kabos.pomodoro.timer.label
 import kotlinx.coroutines.delay
 
+/**
+ * 画面は 3 つ。タイマー → 記録（今週と日の一覧）→ 1 日の詳細。右スワイプで戻る。
+ */
 @Composable
-fun PomodoroApp(controller: TimerController) {
-  val state by controller.state.collectAsStateWithLifecycle()
-  PomodoroScreen(
-    state = state,
-    todayCount = remember(state) { controller.todayCount() },
-    onStart = controller::start,
-    onStop = controller::stop,
-  )
+fun PomodoroApp(controller: TimerController, history: PomodoroHistory) {
+  val navController = rememberSwipeDismissableNavController()
+  MaterialTheme {
+    AppScaffold {
+      SwipeDismissableNavHost(navController = navController, startDestination = ROUTE_TIMER) {
+        composable(ROUTE_TIMER) {
+          val state by controller.state.collectAsStateWithLifecycle()
+          PomodoroScreen(
+            state = state,
+            todayCount = remember(state) { controller.todayCount() },
+            onStart = controller::start,
+            onStop = controller::stop,
+            onOpenHistory = { navController.navigate(ROUTE_HISTORY) },
+          )
+        }
+        composable(ROUTE_HISTORY) {
+          HistoryRoute(history = history, onOpenDay = { date -> navController.navigate("$ROUTE_DAY/${date.toEpochDay()}") })
+        }
+        composable(
+          "$ROUTE_DAY/{epochDay}",
+          arguments = listOf(navArgument("epochDay") { type = NavType.LongType }),
+        ) { entry ->
+          val date = LocalDate.ofEpochDay(entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay())
+          DayRoute(history = history, date = date)
+        }
+      }
+    }
+  }
 }
+
+private const val ROUTE_TIMER = "timer"
+private const val ROUTE_HISTORY = "history"
+private const val ROUTE_DAY = "day"
 
 /**
  * 1 画面だけ。フェーズ・残り時間・何ポモ目かを表示し、下端のボタンで開始/停止する。
@@ -50,6 +86,7 @@ fun PomodoroScreen(
   todayCount: Int,
   onStart: () -> Unit,
   onStop: () -> Unit,
+  onOpenHistory: () -> Unit,
 ) {
   var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
   LaunchedEffect(state.phase, state.phaseEndAt) {
@@ -59,45 +96,40 @@ fun PomodoroScreen(
     }
   }
 
-  MaterialTheme {
-    AppScaffold {
-      // スクロールしない 1 画面なので、EdgeButton は Column の末尾に直接置く
-      ScreenScaffold(timeText = { TimeText() }) { contentPadding ->
-        Column(
-          modifier = Modifier.fillMaxSize(),
-          horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-          Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(contentPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-          ) {
-            Text(
-              text = state.phase.label(),
-              style = MaterialTheme.typography.titleMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              textAlign = TextAlign.Center,
-            )
-            Text(
-              text = formatRemaining(state.remainingMs(now)),
-              style = MaterialTheme.typography.numeralMedium,
-              color = MaterialTheme.colorScheme.onSurface,
-              textAlign = TextAlign.Center,
-            )
-            Text(
-              text = "今日 $todayCount ポモ",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              textAlign = TextAlign.Center,
-            )
-          }
-          EdgeButton(
-            onClick = if (state.isActive) onStop else onStart,
-            buttonSize = EdgeButtonSize.Medium,
-          ) {
-            Text(if (state.isActive) "停止" else "開始")
-          }
-        }
+  // スクロールしない 1 画面なので、EdgeButton は Column の末尾に直接置く
+  ScreenScaffold(timeText = { TimeText() }) { contentPadding ->
+    Column(
+      modifier = Modifier.fillMaxSize(),
+      horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      Column(
+        modifier = Modifier.weight(1f).fillMaxWidth().padding(contentPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+      ) {
+        Text(
+          text = state.phase.label(),
+          style = MaterialTheme.typography.titleMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          textAlign = TextAlign.Center,
+        )
+        Text(
+          text = formatRemaining(state.remainingMs(now)),
+          style = MaterialTheme.typography.numeralMedium,
+          color = MaterialTheme.colorScheme.onSurface,
+          textAlign = TextAlign.Center,
+        )
+        CompactButton(
+          onClick = onOpenHistory,
+          label = { Text("今日 $todayCount ポモ ›") },
+          colors = ButtonDefaults.filledTonalButtonColors(),
+        )
+      }
+      EdgeButton(
+        onClick = if (state.isActive) onStop else onStart,
+        buttonSize = EdgeButtonSize.Medium,
+      ) {
+        Text(if (state.isActive) "停止" else "開始")
       }
     }
   }
@@ -111,16 +143,21 @@ private fun formatRemaining(ms: Long): String {
 @WearPreviewDevices
 @Composable
 private fun PomodoroScreenWorkPreview() {
-  PomodoroScreen(
-    state = TimerState(Phase.WORK, System.currentTimeMillis() + 17 * 60 * 1000L, 3),
-    todayCount = 3,
-    onStart = {},
-    onStop = {},
-  )
+  MaterialTheme {
+    PomodoroScreen(
+      state = TimerState(Phase.WORK, System.currentTimeMillis() + 17 * 60 * 1000L, 3),
+      todayCount = 3,
+      onStart = {},
+      onStop = {},
+      onOpenHistory = {},
+    )
+  }
 }
 
 @WearPreviewDevices
 @Composable
 private fun PomodoroScreenIdlePreview() {
-  PomodoroScreen(state = TimerState(), todayCount = 0, onStart = {}, onStop = {})
+  MaterialTheme {
+    PomodoroScreen(state = TimerState(), todayCount = 0, onStart = {}, onStop = {}, onOpenHistory = {})
+  }
 }
