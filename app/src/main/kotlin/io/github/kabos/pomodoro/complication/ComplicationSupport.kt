@@ -5,14 +5,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
+import androidx.annotation.DrawableRes
 import androidx.wear.watchface.complications.data.MonochromaticImage
 import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import io.github.kabos.pomodoro.MainActivity
-import io.github.kabos.pomodoro.R
 
 /**
- * コンプリケーション 2 つ（今日のポモ数・残り時間）で共有する部品。
+ * コンプリケーション（今日のポモ数 2 種・残り時間）で共有する部品。
  *
  * どちらも定期更新はしない（UPDATE_PERIOD_SECONDS = 0）。
  * 状態が変わったときに [TimerController] が [requestUpdateAll] で更新を頼むだけで、
@@ -21,7 +21,11 @@ import io.github.kabos.pomodoro.R
 object PomodoroComplications {
 
   fun requestUpdateAll(context: Context) {
-    listOf(TodayCountComplicationService::class.java, RemainingTimeComplicationService::class.java)
+    listOf(
+      TodayCountComplicationService::class.java,
+      TodayCountTextComplicationService::class.java,
+      RemainingTimeComplicationService::class.java,
+    )
       .forEach { service ->
         ComplicationDataSourceUpdateRequester
           .create(context, ComponentName(context, service))
@@ -38,8 +42,9 @@ object PomodoroComplications {
       PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-  internal fun icon(context: Context): MonochromaticImage =
-    MonochromaticImage.Builder(Icon.createWithResource(context, R.drawable.ic_pomodoro)).build()
+  /** 文字盤側の色で塗られる単色アイコン。小さい枠では見出しの文字より読みやすい。 */
+  internal fun icon(context: Context, @DrawableRes res: Int): MonochromaticImage =
+    MonochromaticImage.Builder(Icon.createWithResource(context, res)).build()
 
   internal fun plain(text: CharSequence) = PlainComplicationText.Builder(text).build()
 

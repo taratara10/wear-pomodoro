@@ -13,6 +13,7 @@ import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingTimelineComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.TimeInterval
 import androidx.wear.watchface.complications.datasource.TimelineEntry
+import io.github.kabos.pomodoro.R
 import io.github.kabos.pomodoro.complication.PomodoroComplications.plain
 import io.github.kabos.pomodoro.timer.Phase
 import io.github.kabos.pomodoro.timer.TimerStore
@@ -59,22 +60,28 @@ class RemainingTimeComplicationService : SuspendingTimelineComplicationDataSourc
       .setMinimumTimeUnit(TimeUnit.MINUTES)
       .build()
 
+  /** 見出しの文字（作業・瞑想）は小さい枠で読みにくいので、フェーズはアイコンで見分ける。 */
   private fun data(type: ComplicationType, phase: Phase, remaining: ComplicationText): ComplicationData? {
-    val title = plain(phase.label())
+    val description = plain("${phase.label()} 残り")
+    val icon = PomodoroComplications.icon(this, phase.iconRes())
     return when (type) {
       ComplicationType.SHORT_TEXT ->
-        ShortTextComplicationData.Builder(remaining, title)
-          .setTitle(title)
-          .setMonochromaticImage(PomodoroComplications.icon(this))
+        ShortTextComplicationData.Builder(remaining, description)
+          .setMonochromaticImage(icon)
           .setTapAction(PomodoroComplications.openApp(this))
           .build()
       ComplicationType.LONG_TEXT ->
-        LongTextComplicationData.Builder(remaining, title)
-          .setTitle(title)
-          .setMonochromaticImage(PomodoroComplications.icon(this))
+        LongTextComplicationData.Builder(remaining, description)
+          .setMonochromaticImage(icon)
           .setTapAction(PomodoroComplications.openApp(this))
           .build()
       else -> null
     }
+  }
+
+  private fun Phase.iconRes(): Int = when (this) {
+    Phase.WORK -> R.drawable.ic_work
+    Phase.MEDITATION -> R.drawable.ic_meditation
+    Phase.IDLE -> R.drawable.ic_pomodoro
   }
 }
