@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Pixel Watch 向けのポモドーロアプリ（Wear OS、Kotlin、Wear Compose Material3）。
-仕様と経緯は Obsidian vault の `050_develop/pomodoro/pomodoro_spec.md` にある。
+仕様と経緯は `docs/pomodoro_spec.md`（Obsidian vault への symlink）にある。フェーズ 5 以降の決定はそこに追記する。
 
 ## 構成
 

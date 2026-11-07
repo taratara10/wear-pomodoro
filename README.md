@@ -1,7 +1,7 @@
 # Pomodoro (Wear OS)
 
 Pixel Watch 単体で動くポモドーロ。25分作業 / 5分瞑想を自動で繰り返し、手首の振動だけで切り替えを伝える。
-背景と仕様は Obsidian の `050_develop/pomodoro/pomodoro_spec.md`。
+背景と仕様は `docs/pomodoro_spec.md`（Obsidian vault の `050_develop/pomodoro/pomodoro_spec.md` への symlink）。
 
 ## 動き
 
