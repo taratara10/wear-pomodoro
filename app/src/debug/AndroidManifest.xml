@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- 試験用。adb shell am broadcast で作業/瞑想の秒数を変える -->
+        <receiver
+            android:name=".DebugReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="io.github.kabos.pomodoro.DEBUG_SET_DURATIONS" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
