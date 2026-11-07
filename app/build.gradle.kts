@@ -19,6 +19,9 @@ android {
 
   buildTypes {
     release {
+      // 自分の時計に入れるだけなので debug の鍵で署名する。
+      // 同じ鍵なら debug 版の上に入れ直せて、時計内の状態と記録が消えない
+      signingConfig = signingConfigs.getByName("debug")
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }

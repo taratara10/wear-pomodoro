@@ -24,11 +24,15 @@ adb connect <ip>:<port>
 # ビルドして時計で起動
 android run
 
+# release ビルドを時計に入れる（debug の鍵で署名。debug 版の上に入れ直せる）
+./gradlew :app:assembleRelease
+adb install -r app/build/outputs/apk/release/app-release.apk
+
 # 単体テスト
 ./gradlew :app:testDebugUnitTest
 ```
 
-## 試験用コマンド（debug ビルドのみ）
+## 試験用コマンド（debug ビルドのみ。release では run-as も使えない）
 
 ```sh
 # 作業 60秒 / 瞑想 20秒 に短縮（次の開始から有効）
