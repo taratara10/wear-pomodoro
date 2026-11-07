@@ -10,6 +10,8 @@ Pixel Watch 単体で動くポモドーロ。25分作業 / 5分瞑想を自動�
 - 停止ボタンでサイクルを止める。再開は新しい 25分から
 - 切り替えは AlarmManager の `setAlarmClock` で予約し、状態は SharedPreferences に保存する。プロセスが死んでも続く
 - 切り替えの履歴は `files/events.log` に残る
+- 動いている間は通知欄と文字盤に「作業 17:59」のような常駐表示（Ongoing Activity）が出る。タップでアプリに戻る
+- タイル「今日のポモドーロ」で、フェーズ・残り時間・今日のポモ数を見られる
 
 ## ビルドと実機実行
 
@@ -35,6 +37,10 @@ adb shell am broadcast -a io.github.kabos.pomodoro.DEBUG_SET_DURATIONS \
 # 25分 / 5分 に戻す
 adb shell am broadcast -a io.github.kabos.pomodoro.DEBUG_SET_DURATIONS \
   -n io.github.kabos.pomodoro/.DebugReceiver
+
+# タイルを追加して表示する（タイル一覧からも追加できる）
+adb shell am broadcast -a com.google.android.wearable.app.DEBUG_SURFACE \
+  --es operation add-tile --ecn component io.github.kabos.pomodoro/.PomodoroTileService
 
 # 切り替えの記録を見る
 adb shell run-as io.github.kabos.pomodoro cat files/events.log
