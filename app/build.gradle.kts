@@ -57,6 +57,14 @@ dependencies {
   implementation(libs.wear.compose.ui.tooling)
   debugImplementation(libs.androidx.compose.ui.tooling)
 
+  // 通知欄・文字盤に進行中のタイマーを出す
+  implementation(libs.wear.ongoing)
+  // 今日の状況を見るタイル
+  implementation(libs.wear.tiles)
+  implementation(libs.wear.protolayout)
+  implementation(libs.wear.protolayout.expression)
+  implementation(libs.androidx.concurrent.futures)
+
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
 }

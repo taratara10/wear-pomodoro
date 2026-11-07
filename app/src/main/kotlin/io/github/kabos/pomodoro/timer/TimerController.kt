@@ -1,6 +1,8 @@
 package io.github.kabos.pomodoro.timer
 
 import android.content.Context
+import androidx.wear.tiles.TileService
+import io.github.kabos.pomodoro.PomodoroTileService
 import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
 import java.time.ZoneId
@@ -15,25 +17,29 @@ class TimerController(context: Context) {
   private val scheduler = AlarmScheduler(appContext)
   private val haptics = Haptics(appContext)
   private val log = EventLog(appContext)
+  private val notifier = TimerNotifier(appContext)
 
   val state: StateFlow<TimerState> get() = store.state
 
   /** 最初の 1 回だけ手動で開始する。同じ日の再開なら「何ポモ目か」は引き継ぐ。 */
   fun start(now: Long = System.currentTimeMillis()) {
-    val today = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDate().toEpochDay()
-    val carried = if (store.countDay == today) store.state.value.completedWorkCount else 0
+    val today = epochDay(now)
+    val carried = PomodoroCycle.todayCount(store.state.value, store.countDay, today)
     store.countDay = today
 
     val next = PomodoroCycle.start(now, store.durations, carried)
     store.update(next)
     scheduler.schedule(next.phaseEndAt)
+    publish(next, now)
     log.append("START", next, now)
   }
 
   /** 会議・外出などで手動停止。残り時間は捨てる。 */
   fun stop(now: Long = System.currentTimeMillis()) {
     scheduler.cancel()
-    store.update(PomodoroCycle.stop())
+    val next = PomodoroCycle.stop().copy(completedWorkCount = store.state.value.completedWorkCount)
+    store.update(next)
+    publish(next, now)
     log.append("STOP", now = now)
   }
 
@@ -44,9 +50,15 @@ class TimerController(context: Context) {
       log.append("ALARM_IGNORED(idle)", now = now)
       return
     }
-    val next = PomodoroCycle.advance(previous, now, store.durations)
+    // 動いたまま 0 時を越えたら、今日の数は 0 から数え直す
+    val today = epochDay(now)
+    val base = PomodoroCycle.rollOverDay(previous, store.countDay, today)
+    store.countDay = today
+
+    val next = PomodoroCycle.advance(base, now, store.durations)
     store.update(next)
     scheduler.schedule(next.phaseEndAt)
+    publish(next, now)
     when (previous.phase) {
       Phase.WORK -> haptics.workEnded()
       Phase.MEDITATION -> haptics.meditationEnded()
@@ -61,12 +73,16 @@ class TimerController(context: Context) {
    */
   fun ensureScheduled(reason: String, now: Long = System.currentTimeMillis()) {
     val current = store.state.value
-    if (!current.isActive) return
+    if (!current.isActive) {
+      publish(current, now)
+      return
+    }
     if (current.phaseEndAt <= now) {
       log.append("CATCH_UP($reason)", current, now)
       onPhaseEnded(now)
     } else {
       scheduler.schedule(current.phaseEndAt)
+      publish(current, now)
       log.append("RESCHEDULE($reason)", current, now)
     }
   }
@@ -77,4 +93,17 @@ class TimerController(context: Context) {
   }
 
   fun readLog(): String = log.readAll()
+
+  /** 今日終えた作業の数。止めたまま日をまたいだら 0。 */
+  fun todayCount(now: Long = System.currentTimeMillis()): Int =
+    PomodoroCycle.todayCount(store.state.value, store.countDay, epochDay(now))
+
+  /** 通知欄・文字盤・タイルに今の状態を反映する。 */
+  private fun publish(state: TimerState, now: Long) {
+    notifier.show(state, PomodoroCycle.todayCount(state, store.countDay, epochDay(now)), now)
+    TileService.getUpdater(appContext).requestUpdate(PomodoroTileService::class.java)
+  }
+
+  private fun epochDay(now: Long): Long =
+    Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDate().toEpochDay()
 }

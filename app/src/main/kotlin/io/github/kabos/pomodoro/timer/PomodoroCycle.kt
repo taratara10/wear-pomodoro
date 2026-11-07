@@ -44,6 +44,17 @@ object PomodoroCycle {
   fun stop(): TimerState = TimerState()
 
   /**
+   * 今日の時点で終えた作業の数。最後に数えた日 [countDay] が今日でなければ 0。
+   * タイルや通知は、止めたまま日をまたいでも昨日の数を出さないようにこれを使う。
+   */
+  fun todayCount(state: TimerState, countDay: Long, today: Long): Int =
+    if (countDay == today) state.completedWorkCount else 0
+
+  /** 日をまたいでいたら数を 0 に戻した状態を返す。動いたまま 0 時を越えたときに使う。 */
+  fun rollOverDay(state: TimerState, countDay: Long, today: Long): TimerState =
+    if (countDay == today) state else state.copy(completedWorkCount = 0)
+
+  /**
    * フェーズ終了のアラームが鳴った時点で呼ぶ。終わったフェーズに応じて次へ進める。
    * 次のフェーズは「アラームが鳴った今」から数える。遅れて鳴っても瞑想は丸ごと取れる。
    */

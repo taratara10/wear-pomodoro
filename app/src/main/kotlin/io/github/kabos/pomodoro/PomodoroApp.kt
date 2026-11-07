@@ -26,6 +26,7 @@ import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import io.github.kabos.pomodoro.timer.Phase
 import io.github.kabos.pomodoro.timer.TimerController
 import io.github.kabos.pomodoro.timer.TimerState
+import io.github.kabos.pomodoro.timer.label
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,6 +34,7 @@ fun PomodoroApp(controller: TimerController) {
   val state by controller.state.collectAsStateWithLifecycle()
   PomodoroScreen(
     state = state,
+    todayCount = remember(state) { controller.todayCount() },
     onStart = controller::start,
     onStop = controller::stop,
   )
@@ -45,6 +47,7 @@ fun PomodoroApp(controller: TimerController) {
 @Composable
 fun PomodoroScreen(
   state: TimerState,
+  todayCount: Int,
   onStart: () -> Unit,
   onStop: () -> Unit,
 ) {
@@ -82,7 +85,7 @@ fun PomodoroScreen(
               textAlign = TextAlign.Center,
             )
             Text(
-              text = "${state.completedWorkCount} ポモ",
+              text = "今日 $todayCount ポモ",
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
               textAlign = TextAlign.Center,
@@ -100,12 +103,6 @@ fun PomodoroScreen(
   }
 }
 
-private fun Phase.label(): String = when (this) {
-  Phase.IDLE -> "停止中"
-  Phase.WORK -> "作業"
-  Phase.MEDITATION -> "瞑想"
-}
-
 private fun formatRemaining(ms: Long): String {
   val totalSeconds = (ms + 999) / 1_000
   return "%02d:%02d".format(totalSeconds / 60, totalSeconds % 60)
@@ -116,6 +113,7 @@ private fun formatRemaining(ms: Long): String {
 private fun PomodoroScreenWorkPreview() {
   PomodoroScreen(
     state = TimerState(Phase.WORK, System.currentTimeMillis() + 17 * 60 * 1000L, 3),
+    todayCount = 3,
     onStart = {},
     onStop = {},
   )
@@ -124,5 +122,5 @@ private fun PomodoroScreenWorkPreview() {
 @WearPreviewDevices
 @Composable
 private fun PomodoroScreenIdlePreview() {
-  PomodoroScreen(state = TimerState(), onStart = {}, onStop = {})
+  PomodoroScreen(state = TimerState(), todayCount = 0, onStart = {}, onStop = {})
 }

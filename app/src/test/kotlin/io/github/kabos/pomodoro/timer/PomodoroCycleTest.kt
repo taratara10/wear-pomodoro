@@ -68,4 +68,20 @@ class PomodoroCycleTest {
     assertEquals(durations.workMs, work.remainingMs(t0))
     assertEquals(0L, work.remainingMs(work.phaseEndAt + 1))
   }
+
+  @Test
+  fun `today count is shown only for the day it was counted`() {
+    val state = TimerState(Phase.IDLE, 0L, completedWorkCount = 7)
+    assertEquals(7, PomodoroCycle.todayCount(state, countDay = 100, today = 100))
+    assertEquals(0, PomodoroCycle.todayCount(state, countDay = 99, today = 100))
+  }
+
+  @Test
+  fun `crossing midnight while running resets the count before the next pomodoro`() {
+    val working = TimerState(Phase.WORK, t0, completedWorkCount = 5)
+    val rolled = PomodoroCycle.rollOverDay(working, countDay = 99, today = 100)
+    assertEquals(0, rolled.completedWorkCount)
+    assertEquals(1, PomodoroCycle.advance(rolled, t0, durations).completedWorkCount)
+    assertEquals(working, PomodoroCycle.rollOverDay(working, countDay = 100, today = 100))
+  }
 }
