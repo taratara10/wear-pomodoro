@@ -3,4 +3,6 @@
     <string name="channel_timer">タイマーの進行</string>
     <string name="tile_label">今日のポモドーロ</string>
     <string name="tile_description">いまのフェーズ、残り時間、今日のポモ数</string>
+    <string name="complication_today_count">今日のポモ数</string>
+    <string name="complication_remaining">ポモの残り時間</string>
 </resources>

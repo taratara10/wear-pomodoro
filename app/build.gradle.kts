@@ -74,6 +74,8 @@ dependencies {
   implementation(libs.wear.protolayout)
   implementation(libs.wear.protolayout.expression)
   implementation(libs.androidx.concurrent.futures)
+  // 文字盤のコンプリケーション（今日のポモ数・残り時間）
+  implementation(libs.wear.complications.data.source)
 
   // 画面の行き来（タイマー → 記録 → 日ごとの詳細）
   implementation(libs.wear.compose.navigation)

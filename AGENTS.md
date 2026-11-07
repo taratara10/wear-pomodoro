@@ -16,6 +16,7 @@ Pixel Watch 向けのポモドーロアプリ（Wear OS、Kotlin、Wear Compose 
   - DB を変えたら `version` を上げてマイグレーションを書く。スキーマは `app/schemas/` に出る
 - `PomodoroApp.kt`: 画面遷移とタイマー画面。`HistoryScreens.kt`: 記録と日ごとの詳細
 - `PomodoroTileService.kt`: 今日の状況を見るタイル。状態が変わると `TimerController` が更新を頼む
+- `complication/`: 文字盤のコンプリケーション（今日のポモ数・残り時間）。定期更新はせず、`TimerController` が状態の変化で更新を頼む
 - `AlarmReceiver.kt` / `SystemEventReceiver.kt`: アラーム受信、再起動・更新後の復元
 - `app/src/debug/`: 試験用に作業/瞑想の秒数を adb から変える Receiver
 

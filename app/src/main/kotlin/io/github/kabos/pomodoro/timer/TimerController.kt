@@ -3,6 +3,7 @@ package io.github.kabos.pomodoro.timer
 import android.content.Context
 import androidx.wear.tiles.TileService
 import io.github.kabos.pomodoro.PomodoroTileService
+import io.github.kabos.pomodoro.complication.PomodoroComplications
 import io.github.kabos.pomodoro.history.PomodoroHistory
 import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
@@ -104,10 +105,11 @@ class TimerController(context: Context) {
   fun todayCount(now: Long = System.currentTimeMillis()): Int =
     PomodoroCycle.todayCount(store.state.value, store.countDay, epochDay(now))
 
-  /** 通知欄・文字盤・タイルに今の状態を反映する。 */
+  /** 通知欄・文字盤（Ongoing Activity とコンプリケーション）・タイルに今の状態を反映する。 */
   private fun publish(state: TimerState, now: Long) {
     notifier.show(state, PomodoroCycle.todayCount(state, store.countDay, epochDay(now)), now)
     TileService.getUpdater(appContext).requestUpdate(PomodoroTileService::class.java)
+    PomodoroComplications.requestUpdateAll(appContext)
   }
 
   private fun epochDay(now: Long): Long =
