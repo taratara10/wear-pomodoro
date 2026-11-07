@@ -21,6 +21,7 @@ class TimerStore private constructor(context: Context) {
       .putString(KEY_PHASE, state.phase.name)
       .putLong(KEY_PHASE_END_AT, state.phaseEndAt)
       .putInt(KEY_COUNT, state.completedWorkCount)
+      .putLong(KEY_PHASE_START_AT, state.phaseStartAt)
       .apply()
     _state.value = state
   }
@@ -47,12 +48,14 @@ class TimerStore private constructor(context: Context) {
       ?: Phase.IDLE,
     phaseEndAt = prefs.getLong(KEY_PHASE_END_AT, 0L),
     completedWorkCount = prefs.getInt(KEY_COUNT, 0),
+    phaseStartAt = prefs.getLong(KEY_PHASE_START_AT, 0L),
   )
 
   companion object {
     private const val KEY_PHASE = "phase"
     private const val KEY_PHASE_END_AT = "phase_end_at"
     private const val KEY_COUNT = "completed_work_count"
+    private const val KEY_PHASE_START_AT = "phase_start_at"
     private const val KEY_COUNT_DAY = "count_day"
     private const val KEY_WORK_MS = "work_ms"
     private const val KEY_MEDITATION_MS = "meditation_ms"

@@ -3,6 +3,7 @@ package io.github.kabos.pomodoro
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import io.github.kabos.pomodoro.history.PomodoroHistory
 import io.github.kabos.pomodoro.timer.TimerController
 
 /**
@@ -11,9 +12,14 @@ import io.github.kabos.pomodoro.timer.TimerController
  */
 class SystemEventReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
-    when (intent.action) {
-      Intent.ACTION_BOOT_COMPLETED -> TimerController(context).ensureScheduled("boot")
-      Intent.ACTION_MY_PACKAGE_REPLACED -> TimerController(context).ensureScheduled("package_replaced")
+    val reason = when (intent.action) {
+      Intent.ACTION_BOOT_COMPLETED -> "boot"
+      Intent.ACTION_MY_PACKAGE_REPLACED -> "package_replaced"
+      else -> return
     }
+    // 止まっている間に終わった作業は追いつきの中で履歴に書くので、書き終わるまで待つ
+    val pending = goAsync()
+    TimerController(context).ensureScheduled(reason)
+    PomodoroHistory.get(context).afterPendingWrites { pending.finish() }
   }
 }

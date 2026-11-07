@@ -84,4 +84,37 @@ class PomodoroCycleTest {
     assertEquals(1, PomodoroCycle.advance(rolled, t0, durations).completedWorkCount)
     assertEquals(working, PomodoroCycle.rollOverDay(working, countDay = 100, today = 100))
   }
+
+  @Test
+  fun `completed work is recorded from its start to the planned end`() {
+    val work = PomodoroCycle.start(t0, durations)
+    val lateAlarm = work.phaseEndAt + 10 * 60_000L
+    assertEquals(
+      WorkSpan(t0, work.phaseEndAt, completed = true),
+      PomodoroCycle.finishedWork(work, lateAlarm, durations, completed = true),
+    )
+  }
+
+  @Test
+  fun `stopped work is recorded until the stop, but a mistaken tap is not`() {
+    val work = PomodoroCycle.start(t0, durations)
+    assertEquals(
+      WorkSpan(t0, t0 + 10 * 60_000L, completed = false),
+      PomodoroCycle.finishedWork(work, t0 + 10 * 60_000L, durations, completed = false),
+    )
+    assertEquals(null, PomodoroCycle.finishedWork(work, t0 + 5_000L, durations, completed = false))
+  }
+
+  @Test
+  fun `nothing is recorded outside work`() {
+    val meditation = PomodoroCycle.advance(PomodoroCycle.start(t0, durations), t0 + durations.workMs, durations)
+    assertEquals(null, PomodoroCycle.finishedWork(meditation, t0 + 26 * 60_000L, durations, completed = false))
+    assertEquals(null, PomodoroCycle.finishedWork(TimerState(), t0, durations, completed = true))
+  }
+
+  @Test
+  fun `old state without a start time falls back to end minus work length`() {
+    val legacy = TimerState(Phase.WORK, phaseEndAt = t0 + durations.workMs)
+    assertEquals(t0, PomodoroCycle.finishedWork(legacy, t0 + durations.workMs, durations, true)?.startAt)
+  }
 }

@@ -1,6 +1,8 @@
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
+  alias(libs.plugins.ksp)
+  alias(libs.plugins.room)
 }
 
 android {
@@ -42,6 +44,11 @@ kotlin {
   jvmToolchain(17)
 }
 
+// スキーマを残して、将来の DB 変更でマイグレーションを書けるようにする
+room {
+  schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
   val composeBom = platform(libs.androidx.compose.bom)
   implementation(composeBom)
@@ -64,6 +71,13 @@ dependencies {
   implementation(libs.wear.protolayout)
   implementation(libs.wear.protolayout.expression)
   implementation(libs.androidx.concurrent.futures)
+
+  // 画面の行き来（タイマー → 記録 → 日ごとの詳細）
+  implementation(libs.wear.compose.navigation)
+  // ポモの開始・終了時刻の記録
+  implementation(libs.androidx.room.runtime)
+  implementation(libs.androidx.room.ktx)
+  ksp(libs.androidx.room.compiler)
 
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)

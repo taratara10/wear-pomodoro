@@ -3,6 +3,7 @@ package io.github.kabos.pomodoro.timer
 import android.content.Context
 import androidx.wear.tiles.TileService
 import io.github.kabos.pomodoro.PomodoroTileService
+import io.github.kabos.pomodoro.history.PomodoroHistory
 import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
 import java.time.ZoneId
@@ -18,6 +19,7 @@ class TimerController(context: Context) {
   private val haptics = Haptics(appContext)
   private val log = EventLog(appContext)
   private val notifier = TimerNotifier(appContext)
+  private val history = PomodoroHistory.get(appContext)
 
   val state: StateFlow<TimerState> get() = store.state
 
@@ -37,6 +39,8 @@ class TimerController(context: Context) {
   /** 会議・外出などで手動停止。残り時間は捨てる。 */
   fun stop(now: Long = System.currentTimeMillis()) {
     scheduler.cancel()
+    PomodoroCycle.finishedWork(store.state.value, now, store.durations, completed = false)
+      ?.let(history::record)
     val next = PomodoroCycle.stop().copy(completedWorkCount = store.state.value.completedWorkCount)
     store.update(next)
     publish(next, now)
@@ -50,6 +54,8 @@ class TimerController(context: Context) {
       log.append("ALARM_IGNORED(idle)", now = now)
       return
     }
+    PomodoroCycle.finishedWork(previous, now, store.durations, completed = true)?.let(history::record)
+
     // 動いたまま 0 時を越えたら、今日の数は 0 から数え直す
     val today = epochDay(now)
     val base = PomodoroCycle.rollOverDay(previous, store.countDay, today)

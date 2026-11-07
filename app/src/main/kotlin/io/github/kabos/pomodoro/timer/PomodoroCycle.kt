@@ -21,6 +21,8 @@ data class TimerState(
   val phaseEndAt: Long = 0L,
   /** 開始以降に終えた作業（25分）の数。何ポモ目かの表示用。 */
   val completedWorkCount: Int = 0,
+  /** 現在のフェーズが始まった時刻。履歴に作業の開始時刻を残すため。IDLE のときは 0。 */
+  val phaseStartAt: Long = 0L,
 ) {
   val isActive: Boolean get() = phase != Phase.IDLE
 
@@ -39,6 +41,7 @@ object PomodoroCycle {
       phase = Phase.WORK,
       phaseEndAt = now + durations.workMs,
       completedWorkCount = carriedCount,
+      phaseStartAt = now,
     )
 
   fun stop(): TimerState = TimerState()
@@ -65,10 +68,32 @@ object PomodoroCycle {
         phase = Phase.MEDITATION,
         phaseEndAt = now + durations.meditationMs,
         completedWorkCount = state.completedWorkCount + 1,
+        phaseStartAt = now,
       )
       Phase.MEDITATION -> state.copy(
         phase = Phase.WORK,
         phaseEndAt = now + durations.workMs,
+        phaseStartAt = now,
       )
     }
+
+  /**
+   * 終わった作業を履歴に残す形にする。作業中でなければ null。
+   * - 最後まで終えた作業: 終了は予定の終了時刻（再起動で遅れて気づいても、作業は予定どおり終わっている）
+   * - 途中で止めた作業: 終了は止めた時刻。押し間違いのような [MIN_RECORD_MS] 未満は残さない
+   * 開始時刻を持たない古い状態からは、終了時刻と作業の長さから開始を逆算する。
+   */
+  fun finishedWork(state: TimerState, now: Long, durations: Durations, completed: Boolean): WorkSpan? {
+    if (state.phase != Phase.WORK) return null
+    val startAt = if (state.phaseStartAt > 0) state.phaseStartAt else state.phaseEndAt - durations.workMs
+    val endAt = if (completed) state.phaseEndAt else minOf(now, state.phaseEndAt)
+    if (!completed && endAt - startAt < MIN_RECORD_MS) return null
+    return WorkSpan(startAt, endAt, completed)
+  }
+
+  const val MIN_RECORD_MS = 60_000L
 }
+
+/** 履歴に残す 1 回分の作業。[completed] が false なら途中で止めた。 */
+data class WorkSpan(val startAt: Long, val endAt: Long, val completed: Boolean)
+
